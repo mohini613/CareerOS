@@ -12,8 +12,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/resumes")
@@ -30,12 +32,23 @@ public class ResumeController {
         return userDetails.getUserId();
     }
 
+    // Safe DTO to avoid circular JSON
+    private Map<String, Object> toDto(Resume r) {
+        return Map.of(
+            "id",         r.getId(),
+            "filename",   r.getFilename() != null ? r.getFilename() : "",
+            "fileSize",   r.getFileSize() != null ? r.getFileSize() : 0L,
+            "contentType",r.getContentType() != null ? r.getContentType() : "",
+            "uploadedAt", r.getUploadedAt() != null ? r.getUploadedAt().toString() : "",
+            "url",        r.getS3Key() != null ? s3Service.getFileUrl(r.getS3Key()) : ""
+        );
+    }
+
     @PostMapping("/upload")
     public ResponseEntity<?> uploadResume(
             Authentication authentication,
             @RequestParam("file") MultipartFile file) {
         try {
-            // Validate file type
             String contentType = file.getContentType();
             if (contentType == null ||
                 (!contentType.equals("application/pdf") &&
@@ -44,8 +57,6 @@ public class ResumeController {
                 return ResponseEntity.badRequest()
                         .body(Map.of("error", "Only PDF and Word documents are allowed"));
             }
-
-            // Validate file size (5MB max)
             if (file.getSize() > 5 * 1024 * 1024) {
                 return ResponseEntity.badRequest()
                         .body(Map.of("error", "File size must be less than 5MB"));
@@ -65,13 +76,8 @@ public class ResumeController {
             resume.setContentType(contentType);
 
             Resume saved = resumeRepository.save(resume);
+            return ResponseEntity.ok(toDto(saved));
 
-            return ResponseEntity.ok(Map.of(
-                    "id", saved.getId(),
-                    "filename", saved.getFilename(),
-                    "uploadedAt", saved.getUploadedAt(),
-                    "url", s3Service.getFileUrl(s3Key)
-            ));
         } catch (Exception e) {
             return ResponseEntity.internalServerError()
                     .body(Map.of("error", "Upload failed: " + e.getMessage()));
@@ -79,9 +85,14 @@ public class ResumeController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Resume>> getResumes(Authentication authentication) {
+    public ResponseEntity<List<Map<String, Object>>> getResumes(Authentication authentication) {
         Long userId = getUserId(authentication);
-        return ResponseEntity.ok(resumeRepository.findByUserIdOrderByUploadedAtDesc(userId));
+        List<Map<String, Object>> result = resumeRepository
+                .findByUserIdOrderByUploadedAtDesc(userId)
+                .stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(result);
     }
 
     @DeleteMapping("/{id}")
@@ -91,7 +102,6 @@ public class ResumeController {
         Long userId = getUserId(authentication);
         Resume resume = resumeRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new RuntimeException("Resume not found"));
-
         s3Service.deleteFile(resume.getS3Key());
         resumeRepository.delete(resume);
         return ResponseEntity.noContent().build();

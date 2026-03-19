@@ -141,7 +141,7 @@ export default function AIAnalyzer() {
     setLoadingResumes(true);
     try {
       const res = await api.get("/resumes");
-      setResumes(res.data);
+      setResumes(Array.isArray(res.data) ? res.data : res.data.content ?? res.data.resumes ?? []);
       if (res.data.length > 0) setSelectedResumeId(res.data[0].id);
     } catch { setResumes([]); }
     finally { setLoadingResumes(false); }
@@ -150,7 +150,7 @@ export default function AIAnalyzer() {
   const fetchHistory = async () => {
     try {
       const res = await api.get("/resumes/analysis/all");
-      setHistory(res.data.slice(0, 5));
+      setHistory(Array.isArray(res.data) ? res.data.slice(0,5) : []);
     } catch { setHistory([]); }
   };
 
