@@ -1,0 +1,9 @@
+CREATE TABLE resumes (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    filename VARCHAR(255) NOT NULL,
+    s3_key VARCHAR(500) NOT NULL,
+    file_size BIGINT,
+    content_type VARCHAR(100),
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Environment - NEVER commit
+.env
+.env.*
+*/.env
+*/.env.*
+backend/.env
+frontend/.env
+
+# Build
+dist/
+build/
+*/dist/
+target/
+
+# Java
+*.jar
+*.class
+*.war
+.mvn/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Secrets - never commit
+backend/src/main/resources/application.yaml
+backend/backend/src/main/resources/application.yaml
+target/
+backend/target/
+**/*.class
