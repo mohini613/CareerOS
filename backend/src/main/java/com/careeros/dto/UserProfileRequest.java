@@ -14,10 +14,5 @@ public class UserProfileRequest {
     private String linkdinUrl;
     private String githubUrl;
     private String portfolioUrl;
-    public BigDecimal getYearsOfExperience() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getYearsOfExperience'");
-    }
-
-
+    private BigDecimal yearsOfExperience;
 }
